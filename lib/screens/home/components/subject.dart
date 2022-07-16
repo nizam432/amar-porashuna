@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:dhaka/screens/home/components/subject_details.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import '../../../constants.dart';
+
 class SubjectCategory extends StatefulWidget {
   const SubjectCategory({Key? key}) : super(key: key);
   @override
@@ -30,28 +33,30 @@ class Subject {
 }
 
 Future<List<Subject>> fetchSubject() async {
-  final response = await http
-      .get(Uri.parse('https://www.amarporashuna.com/api/getSubject'));
-
+  final response =
+      await http.get(Uri.parse('https://www.amarporashuna.com/api/getSubject'));
   if (response.statusCode == 200) {
-    //return Subject.fromJson(jsonDecode(response.body));
-    return response.body.map(Subject.fromJson).toList();
+    var jsonData = jsonDecode(response.body);
+    List<Subject> subjects = [];
+    for (var u in jsonData) {
+      subjects.add(Subject.fromJson(u));
+    }
+    return subjects;
   } else {
-    throw Exception('Failed to load album');
+    return Future.error('Failed to load album');
   }
 }
 
-class  _SubjectCategoryState extends State<SubjectCategory> {
+class _SubjectCategoryState extends State<SubjectCategory> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Subject>>(
       future: fetchSubject(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return SizedBox(
-            height: 95,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: snapshot.data!.map(buildSubject).toList(),
             ),
           );
@@ -67,7 +72,7 @@ class  _SubjectCategoryState extends State<SubjectCategory> {
       },
     );
   }
-  
+
   Widget buildSubject(Subject subject) {
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -78,30 +83,37 @@ class  _SubjectCategoryState extends State<SubjectCategory> {
         padding: const EdgeInsets.only(
           right: 15,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Column(
-            children: [
-              Image.network(
-                category.imgPath,
-                height: 60,
+        child: Column(
+          children: [
+            ClipRRect(
+              child: Image.network(
+                'https://www.amarporashuna.com/public/upload/subject/' +
+                    subject.picture,
+                height: 100,
                 fit: BoxFit.fill,
               ),
-              const SizedBox(
-                height: 5,
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+              borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+            ),
+            const SizedBox(
+              height: 15,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
                 color: const Color(0xffcdcdcd),
-                child: Text(
-                  subject.subject_title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 16),
-                ),
-              )
-            ],
-          ),
+                borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(10),
+                    bottomRight: Radius.circular(10)),
+              ),
+              child: Text(
+                subject.subject_title,
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+              ),
+            )
+          ],
         ),
       ),
     );
