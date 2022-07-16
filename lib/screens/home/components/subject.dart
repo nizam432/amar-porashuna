@@ -14,13 +14,13 @@ class Subject {
   final String subject_title;
   final String picture;
 
-  const Subject({
+  Subject({
     required this.id,
     required this.subject_title,
     required this.picture,
   });
 
-  factory Subject.fromJson(Map<String, dynamic> json) {
+  static Subject fromJson(Map<String, dynamic> json) {
     return Subject(
       id: json['id'],
       subject_title: json['subject_title'],
@@ -29,46 +29,81 @@ class Subject {
   }
 }
 
-Future<Subject> fetchSubject() async {
+Future<List<Subject>> fetchSubject() async {
   final response = await http
       .get(Uri.parse('https://www.amarporashuna.com/api/getSubject'));
 
   if (response.statusCode == 200) {
-    // If the server did return a 200 OK response,
-    // then parse the JSON.
-    return Subject.fromJson(jsonDecode(response.body));
+    //return Subject.fromJson(jsonDecode(response.body));
+    return response.body.map(Subject.fromJson).toList();
   } else {
-    // If the server did not return a 200 OK response,
-    // then throw an exception.
     throw Exception('Failed to load album');
   }
 }
 
 class  _SubjectCategoryState extends State<SubjectCategory> {
-  final List<String> imgPaths = const [
-    'assets/images/slider1.jpg',
-    'assets/images/slider2.PNG',
-    'assets/images/slider3.jpg',
-    'assets/images/slider4.jpg',
-  ];
   @override
   Widget build(BuildContext context) {
-    return CarouselSlider.builder(
-        itemCount: imgPaths.length,
-        itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-            Container(
-              width: MediaQuery.of(context).size.width,
-              margin: const EdgeInsets.symmetric(horizontal: 1.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      image: AssetImage(imgPaths[itemIndex]), fit: BoxFit.fill
-                    ),
-                    color: kTextColor.withOpacity(.7),
-                //borderRadius: BorderRadius.circular(20),
-              ),
+    return FutureBuilder<List<Subject>>(
+      future: fetchSubject(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return SizedBox(
+            height: 95,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: snapshot.data!.map(buildSubject).toList(),
             ),
-        options: CarouselOptions(height: 180, aspectRatio: 15 / 9)
+          );
+        } else if (snapshot.hasError) {
+          return Text('${snapshot.error}');
+        } else {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: kPrimaryColor,
+            ),
+          );
+        }
+      },
+    );
+  }
+  
+  Widget buildSubject(Subject subject) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => SubjectDetailsScreen(id: subject.id))),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          right: 15,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Column(
+            children: [
+              Image.network(
+                category.imgPath,
+                height: 60,
+                fit: BoxFit.fill,
+              ),
+              const SizedBox(
+                height: 5,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                color: const Color(0xffcdcdcd),
+                child: Text(
+                  subject.subject_title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 16),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
